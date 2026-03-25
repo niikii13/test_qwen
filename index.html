@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Металлические печи для бани | Жар-Мастер</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Header -->
@@ -186,7 +186,7 @@
                 <form class="contact-form" id="orderForm">
                     <h3>Оставить заявку</h3>
                     <input type="text" placeholder="Ваше имя" required>
-                    <input type="tel" placeholder="Ваш телефон" required>
+                    <input type="tel" id="phoneModal" placeholder="+7(999)-999-99-99" required>
                     <input type="email" placeholder="Ваш Email">
                     <select id="productSelect">
                         <option value="">Выберите модель</option>
@@ -217,11 +217,19 @@
             <h3>Заказ печи</h3>
             <p id="modalProduct"></p>
             <form id="modalForm">
-                <input type="text" placeholder="Ваше имя" required>
-                <input type="tel" placeholder="Ваш телефон" required>
-                <input type="email" placeholder="Ваш Email">
+                <input type="text" id="modalName" placeholder="Ваше имя" required>
+                <input type="tel" id="modalPhone" placeholder="+7(999)-999-99-99" required>
+                <input type="email" id="modalEmail" placeholder="Ваш Email">
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Success Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-content">
+            <span class="notification-icon">✓</span>
+            <span class="notification-text">Успешная отправка формы!</span>
         </div>
     </div>
 
