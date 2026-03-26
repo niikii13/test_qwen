@@ -177,8 +177,7 @@ const app = {
         // Находим индексы нужных колонок
         const idx = {
             type: headers.findIndex(h => h.toLowerCase().includes('тип конверсии')),
-            cost: headers.findIndex(h => h.toLowerCase().includes('затраты')),
-            name: headers.findIndex(h => h.toLowerCase().includes('название') || h.toLowerCase().includes('номенклатура'))
+            cost: headers.findIndex(h => h.toLowerCase().includes('затраты'))
         };
 
         // Обрабатываем строки данных (пропускаем первую - заголовки, и последнюю - итоги)
@@ -249,6 +248,11 @@ const app = {
         const tbody = document.getElementById('admin-campaigns-body');
         tbody.innerHTML = '';
 
+        if (this.data.campaigns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Список пуст</td></tr>';
+            return;
+        }
+
         this.data.campaigns.forEach(c => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -268,6 +272,11 @@ const app = {
     renderUserTable() {
         const tbody = document.getElementById('user-campaigns-body');
         tbody.innerHTML = '';
+
+        if (this.data.campaigns.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Нет данных</td></tr>';
+            return;
+        }
 
         this.data.campaigns.forEach(c => {
             // Основная строка
@@ -338,7 +347,7 @@ const app = {
         } else {
             detailRow.classList.add('active');
             btn.classList.add('rotated');
-            btn.textContent = '▶';
+            btn.textContent = '▼';
         }
     },
 
