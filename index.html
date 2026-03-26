@@ -3,155 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WB Promotion - Визуализация данных</title>
+    <title>WB Promotion Analytics</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>📊 WB Promotion Analytics</h1>
-            <button class="btn btn-primary" onclick="openModal('campaignModal')">+ Добавить кампанию</button>
+            <button class="btn-primary" onclick="openModal('campaignModal')">+ Добавить кампанию</button>
         </header>
 
-        <!-- Фильтр по датам -->
-        <section class="filter-section">
-            <h2>📅 Фильтр по периоду</h2>
-            <div class="filter-controls">
-                <div class="week-nav">
-                    <button class="btn btn-secondary" onclick="navigateWeek(-1)">← Предыдущая неделя</button>
-                    <button class="btn btn-secondary" onclick="navigateWeek(0)">Текущая неделя</button>
-                    <button class="btn btn-secondary" onclick="navigateWeek(1)">Следующая неделя →</button>
-                </div>
-                <div class="date-inputs">
-                    <label>
-                        С:
-                        <input type="date" id="filterStart" onchange="applyDateFilter()">
-                    </label>
-                    <label>
-                        По:
-                        <input type="date" id="filterEnd" onchange="applyDateFilter()">
-                    </label>
-                </div>
-                <p class="week-info">Период: <span id="currentPeriod">-</span></p>
-            </div>
-        </section>
-
-        <!-- Сводная статистика -->
-        <section class="stats-section">
+        <!-- Статистика (Сводная) -->
+        <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
-                <h3>💰 Затраты</h3>
-                <p class="stat-value" id="totalCost">0 ₽</p>
+                <h3>Всего кампаний</h3>
+                <p id="totalCampaigns">0</p>
             </div>
             <div class="stat-card">
-                <h3>👁️ Показы</h3>
-                <p class="stat-value" id="totalImpressions">0</p>
+                <h3>Общие затраты</h3>
+                <p id="totalCost">0 ₽</p>
             </div>
             <div class="stat-card">
-                <h3>📈 CTR</h3>
-                <p class="stat-value" id="avgCTR">0%</p>
+                <h3>Общие заказы</h3>
+                <p id="totalOrders">0</p>
             </div>
             <div class="stat-card">
-                <h3>🛒 Заказы</h3>
-                <p class="stat-value" id="totalOrders">0</p>
+                <h3>Средний CTR</h3>
+                <p id="avgCtr">0%</p>
             </div>
-        </section>
+        </div>
 
         <!-- Список кампаний -->
-        <section class="campaigns-section">
-            <h2>📋 Рекламные кампании</h2>
-            <div id="campaignsList" class="campaigns-grid"></div>
-        </section>
+        <div class="campaigns-list" id="campaignsList">
+            <div class="empty-state">Список кампаний пуст. Добавьте первую кампанию.</div>
+        </div>
     </div>
 
-    <!-- Модальное окно добавления кампании -->
+    <!-- Модальное окно: Добавление кампании -->
     <div id="campaignModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('campaignModal')">&times;</span>
-            <h2>Добавить рекламную кампанию</h2>
-            <form id="campaignForm" onsubmit="saveCampaign(event)">
+            <h2>Новая рекламная кампания</h2>
+            <form id="campaignForm">
                 <div class="form-group">
-                    <label>Ссылка на кампанию *</label>
-                    <input type="url" id="campaignUrl" required placeholder="https://...">
-                    <small>Название извлечётся автоматически из URL</small>
+                    <label>Название кампании</label>
+                    <input type="text" id="campName" placeholder="Например: Реклама платья летнего" required>
                 </div>
                 <div class="form-group">
-                    <label>Тип кампании *</label>
-                    <select id="campaignType" required>
-                        <option value="CPC">CPC (оплата за клики)</option>
-                        <option value="CPM">CPM (оплата за 1000 показов)</option>
-                    </select>
+                    <label>Ссылка на кампанию</label>
+                    <input type="url" id="campUrl" placeholder="https://..." required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Затраты (₽) *</label>
-                        <input type="number" id="campaignCost" required min="0" step="0.01">
+                        <label>Тип кампании</label>
+                        <select id="campType">
+                            <option value="CPC">CPC (Оплата за клики)</option>
+                            <option value="CPM">CPM (Оплата за показы)</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label>Показы *</label>
-                        <input type="number" id="campaignImpressions" required min="0">
+                        <label>Период (ПН-ВС)</label>
+                        <input type="text" id="campPeriod" placeholder="16.03.2026-22.03.2026" required>
                     </div>
                 </div>
+                
                 <div class="form-row">
                     <div class="form-group">
-                        <label>CTR (%) *</label>
-                        <input type="number" id="campaignCTR" required min="0" max="100" step="0.01">
+                        <label>Затраты (руб.)</label>
+                        <input type="number" step="0.01" id="campCost" required>
                     </div>
                     <div class="form-group">
-                        <label>Заказы (шт) *</label>
-                        <input type="number" id="campaignOrders" required min="0">
+                        <label>Показы</label>
+                        <input type="number" id="campImpressions" required>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Доля затрат (%) *</label>
-                    <input type="number" id="campaignShare" required min="0" max="100" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>Период *</label>
-                    <div class="period-inputs">
-                        <input type="date" id="periodStart" required>
-                        <span>—</span>
-                        <input type="date" id="periodEnd" required>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CTR (%)</label>
+                        <input type="number" step="0.01" id="campCtr" required>
                     </div>
-                    <small>Период должен быть с ПН по ВС</small>
+                    <div class="form-group">
+                        <label>Заказы (шт.)</label>
+                        <input type="number" id="campOrders" required>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-full">Сохранить кампанию</button>
+
+                <div class="form-group">
+                    <label>Доля затрат / ДРР (%)</label>
+                    <input type="number" step="0.01" id="campDrr" required>
+                </div>
+
+                <button type="submit" class="btn-primary full-width">Сохранить кампанию</button>
             </form>
         </div>
     </div>
 
-    <!-- Модальное окно детальной статистики -->
-    <div id="detailModal" class="modal">
-        <div class="modal-content modal-large">
-            <span class="close" onclick="closeModal('detailModal')">&times;</span>
-            <h2 id="detailTitle">Детальная статистика</h2>
-            <div class="campaign-info" id="campaignInfo"></div>
+    <!-- Модальное окно: Загрузка файла -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('uploadModal')">&times;</span>
+            <h2 id="uploadTitle">Загрузка отчета</h2>
+            <p class="subtitle">Файл будет автоматически очищен от итоговых строк, нулевых затрат и мультикарточек.</p>
             
-            <div class="upload-section">
-                <h3>📁 Загрузить расширенные данные (Excel)</h3>
-                <div class="drop-zone" id="dropZone">
-                    <p>Перетащите Excel файл сюда или кликните для выбора</p>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
-                </div>
-                <div class="period-assign">
-                    <label>Период для файла (ДД.ММ.ГГГГ - ДД.ММ.ГГГГ):</label>
-                    <div class="period-inputs">
-                        <input type="date" id="filePeriodStart" required>
-                        <span>—</span>
-                        <input type="date" id="filePeriodEnd" required>
-                    </div>
-                    <button class="btn btn-primary" onclick="uploadFile()">Загрузить файл</button>
-                </div>
+            <div class="form-group">
+                <label>Период (ДД.ММ.ГГГГ-ДД.ММ.ГГГГ)</label>
+                <input type="text" id="filePeriod" placeholder="16.03.2026-22.03.2026" required>
             </div>
-
-            <div class="files-list" id="filesList">
-                <h3>📄 Загруженные файлы</h3>
-                <div id="uploadedFiles"></div>
+            
+            <div class="drop-zone" id="dropZone">
+                <p>Перетащите Excel файл сюда или кликните для выбора</p>
+                <input type="file" id="fileInput" accept=".xlsx, .xls" hidden>
             </div>
+            
+            <div id="uploadStatus" class="status-message"></div>
+            
+            <button class="btn-primary full-width" onclick="processFileUpload()" style="margin-top: 20px;">
+                📤 Загрузить и обработать
+            </button>
+        </div>
+    </div>
 
-            <div class="extended-stats" id="extendedStats">
-                <h3>📊 Расширенная статистика</h3>
-                <div id="statsTable"></div>
+    <!-- Модальное окно: Детали кампании (Таблица) -->
+    <div id="detailsModal" class="modal modal-large">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('detailsModal')">&times;</span>
+            <h2 id="detailsTitle">Детализация кампании</h2>
+            <div class="table-container">
+                <table id="detailsTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
