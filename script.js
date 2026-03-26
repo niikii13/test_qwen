@@ -276,7 +276,26 @@ function uploadFile() {
         const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        let jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Удаляем последнюю строку (итоговую), если она есть
+        if (jsonData.length > 0) {
+            // Проверяем, является ли последняя строка итоговой
+            // Обычно в итоговой строке первое поле содержит "Итого" или аналогичное значение
+            const lastRow = jsonData[jsonData.length - 1];
+            const firstValue = Object.values(lastRow)[0];
+            
+            // Если первая ячейка последней строки содержит "Итого", "Total" или пустая - удаляем её
+            if (firstValue && typeof firstValue === 'string' && 
+                (firstValue.toLowerCase().includes('итого') || 
+                 firstValue.toLowerCase().includes('total') ||
+                 firstValue.trim() === '')) {
+                jsonData.pop();
+            } else {
+                // В любом случае удаляем последнюю строку, так как это требование
+                jsonData.pop();
+            }
+        }
         
         const campaign = campaigns.find(c => c.id === currentCampaignId);
         if (campaign) {
