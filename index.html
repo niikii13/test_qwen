@@ -3,233 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Металлические печи для бани | Жар-Мастер</title>
+    <title>WB Promotion - Визуализация данных</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <nav class="nav">
-                <div class="logo">🔥 Жар-Мастер</div>
-                <ul class="nav-menu">
-                    <li><a href="#home">Главная</a></li>
-                    <li><a href="#catalog">Каталог</a></li>
-                    <li><a href="#features">Преимущества</a></li>
-                    <li><a href="#reviews">Отзывы</a></li>
-                    <li><a href="#contact">Контакты</a></li>
-                </ul>
-                <div class="burger">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </nav>
-        </div>
-    </header>
+    <div class="container">
+        <header>
+            <h1>📊 WB Promotion Analytics</h1>
+            <button class="btn btn-primary" onclick="openModal('campaignModal')">+ Добавить кампанию</button>
+        </header>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <h1>Металлические печи для бани премиум-класса</h1>
-                <p>Создайте идеальную атмосферу в вашей бане с нашими надёжными и долговечными печами</p>
-                <a href="#catalog" class="btn btn-primary">Смотреть каталог</a>
+        <!-- Фильтр по датам -->
+        <section class="filter-section">
+            <h2>📅 Фильтр по периоду</h2>
+            <div class="filter-controls">
+                <div class="week-nav">
+                    <button class="btn btn-secondary" onclick="navigateWeek(-1)">← Предыдущая неделя</button>
+                    <button class="btn btn-secondary" onclick="navigateWeek(0)">Текущая неделя</button>
+                    <button class="btn btn-secondary" onclick="navigateWeek(1)">Следующая неделя →</button>
+                </div>
+                <div class="date-inputs">
+                    <label>
+                        С:
+                        <input type="date" id="filterStart" onchange="applyDateFilter()">
+                    </label>
+                    <label>
+                        По:
+                        <input type="date" id="filterEnd" onchange="applyDateFilter()">
+                    </label>
+                </div>
+                <p class="week-info">Период: <span id="currentPeriod">-</span></p>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Catalog Section -->
-    <section id="catalog" class="catalog">
-        <div class="container">
-            <h2 class="section-title">Наш каталог</h2>
-            <div class="products-grid">
-                <!-- Product 1 -->
-                <div class="product-card">
-                    <div class="product-image">🔥</div>
-                    <h3>Классик-100</h3>
-                    <p class="product-desc">Идеально для небольших бань до 15 м³</p>
-                    <ul class="product-specs">
-                        <li>Мощность: 10 кВт</li>
-                        <li>Объём: 10-15 м³</li>
-                        <li>Толщина стали: 6 мм</li>
-                        <li>Вес: 45 кг</li>
-                    </ul>
-                    <div class="product-price">24 900 ₽</div>
-                    <button class="btn btn-order" data-product="Классик-100">Заказать</button>
-                </div>
-
-                <!-- Product 2 -->
-                <div class="product-card">
-                    <div class="product-image">🔥</div>
-                    <h3>Универсал-150</h3>
-                    <p class="product-desc">Оптимальный выбор для средних парных</p>
-                    <ul class="product-specs">
-                        <li>Мощность: 15 кВт</li>
-                        <li>Объём: 15-20 м³</li>
-                        <li>Толщина стали: 8 мм</li>
-                        <li>Вес: 65 кг</li>
-                    </ul>
-                    <div class="product-price">34 900 ₽</div>
-                    <button class="btn btn-order" data-product="Универсал-150">Заказать</button>
-                </div>
-
-                <!-- Product 3 -->
-                <div class="product-card">
-                    <div class="product-image">🔥</div>
-                    <h3>Профи-200</h3>
-                    <p class="product-desc">Для больших бань и коммерческого использования</p>
-                    <ul class="product-specs">
-                        <li>Мощность: 20 кВт</li>
-                        <li>Объём: 20-30 м³</li>
-                        <li>Толщина стали: 10 мм</li>
-                        <li>Вес: 85 кг</li>
-                    </ul>
-                    <div class="product-price">49 900 ₽</div>
-                    <button class="btn btn-order" data-product="Профи-200">Заказать</button>
-                </div>
-
-                <!-- Product 4 -->
-                <div class="product-card">
-                    <div class="product-image">🔥</div>
-                    <h3>Элит-300</h3>
-                    <p class="product-desc">Премиум модель с панорамной дверцей</p>
-                    <ul class="product-specs">
-                        <li>Мощность: 25 кВт</li>
-                        <li>Объём: 25-35 м³</li>
-                        <li>Толщина стали: 12 мм</li>
-                        <li>Вес: 110 кг</li>
-                    </ul>
-                    <div class="product-price">69 900 ₽</div>
-                    <button class="btn btn-order" data-product="Элит-300">Заказать</button>
-                </div>
+        <!-- Сводная статистика -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <h3>💰 Затраты</h3>
+                <p class="stat-value" id="totalCost">0 ₽</p>
             </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <h2 class="section-title">Почему выбирают нас</h2>
-            <div class="features-grid">
-                <div class="feature-item">
-                    <div class="feature-icon">🛡️</div>
-                    <h3>Надёжность</h3>
-                    <p>Используем только качественную жаропрочную сталь от проверенных поставщиков</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">⏱️</div>
-                    <h3>Долговечность</h3>
-                    <p>Срок службы наших печей — более 10 лет при правильной эксплуатации</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🚚</div>
-                    <h3>Быстрая доставка</h3>
-                    <p>Доставляем по всей России в течение 3-7 дней</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🔧</div>
-                    <h3>Гарантия</h3>
-                    <p>Предоставляем гарантию 2 года на все изделия</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">💰</div>
-                    <h3>Лучшая цена</h3>
-                    <p>Прямые продажи от производителя без наценок посредников</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">📞</div>
-                    <h3>Поддержка</h3>
-                    <p>Бесплатные консультации по установке и эксплуатации</p>
-                </div>
+            <div class="stat-card">
+                <h3>👁️ Показы</h3>
+                <p class="stat-value" id="totalImpressions">0</p>
             </div>
-        </div>
-    </section>
-
-    <!-- Reviews Section -->
-    <section id="reviews" class="reviews">
-        <div class="container">
-            <h2 class="section-title">Отзывы наших клиентов</h2>
-            <div class="reviews-grid">
-                <div class="review-card">
-                    <div class="review-stars">⭐⭐⭐⭐⭐</div>
-                    <p class="review-text">"Отличная печь! Быстро нагревает парную, держит тепло долго. Пользуемся уже год — никаких нареканий."</p>
-                    <p class="review-author">— Александр, Москва</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-stars">⭐⭐⭐⭐⭐</div>
-                    <p class="review-text">"Заказывал Универсал-150 для своей бани. Качество сборки на высоте, доставка быстрая. Рекомендую!"</p>
-                    <p class="review-author">— Дмитрий, Санкт-Петербург</p>
-                </div>
-                <div class="review-card">
-                    <div class="review-stars">⭐⭐⭐⭐⭐</div>
-                    <p class="review-text">"Взяли Профи-200 для общественной бани. Работает безупречно уже 8 месяцев. Очень довольны покупкой."</p>
-                    <p class="review-author">— Сергей, Екатеринбург</p>
-                </div>
+            <div class="stat-card">
+                <h3>📈 CTR</h3>
+                <p class="stat-value" id="avgCTR">0%</p>
             </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <h2 class="section-title">Свяжитесь с нами</h2>
-            <div class="contact-wrapper">
-                <div class="contact-info">
-                    <h3>Контактная информация</h3>
-                    <p>📍 г. Москва, ул. Промышленная, д. 15</p>
-                    <p>📞 +7 (999) 123-45-67</p>
-                    <p>✉️ info@zhar-master.ru</p>
-                    <p>🕒 Пн-Пт: 9:00 - 18:00</p>
-                </div>
-                <form class="contact-form" id="orderForm">
-                    <h3>Оставить заявку</h3>
-                    <input type="text" placeholder="Ваше имя" required>
-                    <input type="tel" id="phoneModal" placeholder="+7(999)-999-99-99" required>
-                    <input type="email" placeholder="Ваш Email">
-                    <select id="productSelect">
-                        <option value="">Выберите модель</option>
-                        <option value="Классик-100">Классик-100</option>
-                        <option value="Универсал-150">Универсал-150</option>
-                        <option value="Профи-200">Профи-200</option>
-                        <option value="Элит-300">Элит-300</option>
-                    </select>
-                    <textarea placeholder="Комментарий"></textarea>
-                    <button type="submit" class="btn btn-primary">Отправить заявку</button>
-                </form>
+            <div class="stat-card">
+                <h3>🛒 Заказы</h3>
+                <p class="stat-value" id="totalOrders">0</p>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Жар-Мастер. Все права защищены.</p>
-            <p>Производство и продажа металлических печей для бани</p>
-        </div>
-    </footer>
+        <!-- Список кампаний -->
+        <section class="campaigns-section">
+            <h2>📋 Рекламные кампании</h2>
+            <div id="campaignsList" class="campaigns-grid"></div>
+        </section>
+    </div>
 
-    <!-- Modal -->
-    <div class="modal" id="modal">
+    <!-- Модальное окно добавления кампании -->
+    <div id="campaignModal" class="modal">
         <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <h3>Заказ печи</h3>
-            <p id="modalProduct"></p>
-            <form id="modalForm">
-                <input type="text" id="modalName" placeholder="Ваше имя" required>
-                <input type="tel" id="modalPhone" placeholder="+7(999)-999-99-99" required>
-                <input type="email" id="modalEmail" placeholder="Ваш Email">
-                <button type="submit" class="btn btn-primary">Отправить</button>
+            <span class="close" onclick="closeModal('campaignModal')">&times;</span>
+            <h2>Добавить рекламную кампанию</h2>
+            <form id="campaignForm" onsubmit="saveCampaign(event)">
+                <div class="form-group">
+                    <label>Ссылка на кампанию *</label>
+                    <input type="url" id="campaignUrl" required placeholder="https://...">
+                    <small>Название извлечётся автоматически из URL</small>
+                </div>
+                <div class="form-group">
+                    <label>Тип кампании *</label>
+                    <select id="campaignType" required>
+                        <option value="CPC">CPC (оплата за клики)</option>
+                        <option value="CPM">CPM (оплата за 1000 показов)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Затраты (₽) *</label>
+                        <input type="number" id="campaignCost" required min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Показы *</label>
+                        <input type="number" id="campaignImpressions" required min="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CTR (%) *</label>
+                        <input type="number" id="campaignCTR" required min="0" max="100" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Заказы (шт) *</label>
+                        <input type="number" id="campaignOrders" required min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Доля затрат (%) *</label>
+                    <input type="number" id="campaignShare" required min="0" max="100" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Период *</label>
+                    <div class="period-inputs">
+                        <input type="date" id="periodStart" required>
+                        <span>—</span>
+                        <input type="date" id="periodEnd" required>
+                    </div>
+                    <small>Период должен быть с ПН по ВС</small>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Сохранить кампанию</button>
             </form>
         </div>
     </div>
 
-    <!-- Success Notification -->
-    <div class="notification" id="notification">
-        <div class="notification-content">
-            <span class="notification-icon">✓</span>
-            <span class="notification-text">Успешная отправка формы!</span>
+    <!-- Модальное окно детальной статистики -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('detailModal')">&times;</span>
+            <h2 id="detailTitle">Детальная статистика</h2>
+            <div class="campaign-info" id="campaignInfo"></div>
+            
+            <div class="upload-section">
+                <h3>📁 Загрузить расширенные данные (Excel)</h3>
+                <div class="drop-zone" id="dropZone">
+                    <p>Перетащите Excel файл сюда или кликните для выбора</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+                </div>
+                <div class="period-assign">
+                    <label>Период для файла (ДД.ММ.ГГГГ - ДД.ММ.ГГГГ):</label>
+                    <div class="period-inputs">
+                        <input type="date" id="filePeriodStart" required>
+                        <span>—</span>
+                        <input type="date" id="filePeriodEnd" required>
+                    </div>
+                    <button class="btn btn-primary" onclick="uploadFile()">Загрузить файл</button>
+                </div>
+            </div>
+
+            <div class="files-list" id="filesList">
+                <h3>📄 Загруженные файлы</h3>
+                <div id="uploadedFiles"></div>
+            </div>
+
+            <div class="extended-stats" id="extendedStats">
+                <h3>📊 Расширенная статистика</h3>
+                <div id="statsTable"></div>
+            </div>
         </div>
     </div>
 
