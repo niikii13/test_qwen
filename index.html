@@ -4,188 +4,193 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WB Promotion Analytics</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS для работы с Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        .hidden-section { display: none; }
+        .loader { border-top-color: #3B82F6; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Экран авторизации -->
-        <div id="auth-screen" class="auth-screen active">
-            <div class="auth-card">
-                <h2>🔐 Авторизация</h2>
-                <form id="auth-form">
-                    <div class="form-group">
-                        <label>Логин</label>
-                        <input type="text" id="auth-login" placeholder="Введите логин" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Пароль</label>
-                        <input type="password" id="auth-password" placeholder="Введите пароль" required>
-                    </div>
-                    <button type="submit" class="btn-primary full-width">Войти</button>
-                    <p class="hint" style="margin-top: 15px; font-size: 12px;">
-                        <strong>Тестовые учетки:</strong><br>
-                        Админ: admin / admin123<br>
-                        Аналитик: analyst / analyst123
-                    </p>
-                    <div id="auth-error" class="status-msg error" style="display: none;"></div>
-                </form>
-            </div>
-        </div>
+<body class="bg-gray-100 text-gray-800 font-sans">
 
-        <!-- Экран выбора роли (теперь скрыт по умолчанию) -->
-        <div id="role-selection" class="role-screen">
-            <div class="role-card" onclick="app.setRole('admin')">
-                <h2>👤 Администратор</h2>
-                <p>Добавление кампаний и загрузка данных</p>
-            </div>
-            <div class="role-card" onclick="app.setRole('user')">
-                <h2>📈 Аналитик / Руководитель</h2>
-                <p>Просмотр сводной статистики и отчетов</p>
-            </div>
-        </div>
-
-        <!-- Секция Администратора -->
-        <div id="admin-view" class="view-section">
-            <header class="main-header">
-                <h1>🔧 Панель администратора</h1>
-                <button class="btn-secondary" onclick="app.setRole('selection')">← Назад к выбору роли</button>
-            </header>
-
-            <div class="content-grid">
-                <!-- Форма добавления кампании -->
-                <div class="card">
-                    <h2>➕ Добавить кампанию</h2>
-                    <p class="hint">Введите данные о рекламной кампании</p>
-                    <form id="campaign-form">
-                        <div class="form-group">
-                            <label>Ссылка на кампанию</label>
-                            <input type="url" id="camp-url" placeholder="https://..." required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Тип кампании</label>
-                                <select id="camp-type">
-                                    <option value="CPC">CPC (Оплата за клики)</option>
-                                    <option value="CPM">CPM (Оплата за показы)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Период (ПН-ВС)</label>
-                                <input type="text" id="camp-period" placeholder="16.03.2026-22.03.2026" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Затраты (руб.)</label>
-                                <input type="number" step="0.01" id="camp-cost" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Показы</label>
-                                <input type="number" id="camp-impressions" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>CTR (%)</label>
-                                <input type="number" step="0.01" id="camp-ctr" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Заказы (шт.)</label>
-                                <input type="number" id="camp-orders" required>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Доля затрат / ДРР (%)</label>
-                            <input type="number" step="0.01" id="camp-drr" required>
-                        </div>
-
-                        <button type="submit" class="btn-primary full-width">Сохранить кампанию</button>
-                    </form>
+    <!-- ЭКРАН НАСТРОЙКИ SUPABASE (Только для первого запуска или Админа) -->
+    <div id="setup-screen" class="hidden-section fixed inset-0 bg-gray-900 bg-opacity-95 z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h2 class="text-2xl font-bold mb-4 text-gray-900">Настройка подключения</h2>
+            <p class="mb-4 text-sm text-gray-600">Введите данные вашего проекта Supabase.</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Project URL</label>
+                    <input type="text" id="sb-url" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://xxxxx.supabase.co">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Anon Public Key</label>
+                    <input type="password" id="sb-key" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="eyJhbGciOiJIUzI1NiIsInR...">
+                </div>
+                <button onclick="saveSupabaseConfig()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">Сохранить и продолжить</button>
+            </div>
+        </div>
+    </div>
 
-                <!-- Загрузка файла -->
-                <div class="card">
-                    <h2>📁 Загрузить детальные данные</h2>
-                    <p class="hint">Выберите кампанию и загрузите Excel файл с расширенной статистикой</p>
-                    
-                    <div class="form-group">
-                        <label>Выберите кампанию</label>
-                        <select id="file-campaign-select">
-                            <option value="">-- Выберите кампанию --</option>
-                        </select>
+    <!-- ЭКРАН АВТОРИЗАЦИИ -->
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center bg-gray-100">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <h1 class="text-3xl font-bold text-center mb-6 text-blue-600">WB Analytics</h1>
+            
+            <div class="space-y-4">
+                <input type="email" id="email" class="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
+                <input type="password" id="password" class="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Пароль">
+                
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 font-semibold">Войти</button>
+                <button onclick="handleSignup()" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700 font-semibold">Регистрация</button>
+            </div>
+            <p id="auth-error" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+            <p class="text-xs text-gray-500 mt-6 text-center">
+                После регистрации роль по умолчанию: <b>Наблюдатель</b>.<br>
+                Для смены роли обратитесь к администратору БД.
+            </p>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+    <div id="app-screen" class="hidden-section min-h-screen flex flex-col">
+        <!-- Навигация -->
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <span class="text-xl font-bold text-blue-600">WB Analytics</span>
+                        <span id="user-role-badge" class="ml-3 px-2 py-1 text-xs font-semibold rounded bg-gray-200 text-gray-700">Роль</span>
                     </div>
-                    
-                    <div class="drop-zone" id="drop-zone">
-                        <p>Перетащите Excel файл сюда или кликните для выбора</p>
-                        <input type="file" id="excel-input" accept=".xlsx, .xls" hidden>
+                    <div class="flex items-center space-x-4">
+                        <button id="admin-settings-btn" onclick="toggleSetupScreen()" class="hidden text-gray-500 hover:text-blue-600" title="Настройки Supabase">
+                            ⚙️ Настройки
+                        </button>
+                        <button onclick="handleLogout()" class="text-gray-600 hover:text-red-600 font-medium">Выход</button>
                     </div>
-                    
-                    <div id="upload-status" class="status-msg"></div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Контент -->
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Меню ролей -->
+            <div id="role-nav" class="mb-8 border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="switchTab('dashboard')" class="nav-link active border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Дашборд</button>
+                    <button id="nav-campaigns" onclick="switchTab('campaigns')" class="nav-link hidden border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Кампании</button>
+                    <button id="nav-upload" onclick="switchTab('upload')" class="nav-link hidden border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Загрузка данных</button>
+                </nav>
+            </div>
+
+            <!-- Вкладка: ДАШБОРД (Все роли) -->
+            <div id="tab-dashboard" class="tab-content">
+                <h2 class="text-2xl font-bold mb-6">Обзор статистики</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm font-medium">Всего кампаний</h3>
+                        <p id="stat-total" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm font-medium">Активные</h3>
+                        <p id="stat-active" class="text-3xl font-bold text-green-600 mt-2">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm font-medium">Бюджет (план)</h3>
+                        <p id="stat-budget" class="text-3xl font-bold text-blue-600 mt-2">0 ₽</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Последние кампании</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Название</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тип</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата начала</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Данные -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- Таблица кампаний -->
-            <div class="card" style="margin-top: 20px;">
-                <h2>📋 Список кампаний</h2>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Название</th>
-                            <th>Тип</th>
-                            <th>Период</th>
-                            <th>Затраты</th>
-                            <th>Детали</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-campaigns-body">
-                        <tr><td colspan="6" style="text-align: center;">Список пуст</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Секция Аналитика -->
-        <div id="user-view" class="view-section">
-            <header class="main-header">
-                <h1>📊 Сводная статистика</h1>
-                <button class="btn-secondary" onclick="app.setRole('selection')">← Назад к выбору роли</button>
-            </header>
-
-            <!-- Сводные карточки -->
-            <div id="summary-stats" class="stats-row">
-                <!-- Заполняется через JS -->
+            <!-- Вкладка: КАМПАНИИ (Маркетолог + Админ) -->
+            <div id="tab-campaigns" class="tab-content hidden-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Управление кампаниями</h2>
+                    <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">+ Новая кампания</button>
+                </div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Название</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Тип</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Даты</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="campaigns-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- Таблица кампаний с раскрывающимися деталями -->
-            <div class="card" style="margin-top: 20px;">
-                <h2>📈 Все кампании</h2>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Название</th>
-                            <th>Тип</th>
-                            <th>Период</th>
-                            <th>Затраты (₽)</th>
-                            <th>Показы</th>
-                            <th>CTR (%)</th>
-                            <th>Заказы</th>
-                            <th>ДРР (%)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-campaigns-body">
-                        <tr><td colspan="9" style="text-align: center;">Нет данных</td></tr>
-                    </tbody>
-                </table>
+            <!-- Вкладка: ЗАГРУЗКА (Маркетолог + Админ) -->
+            <div id="tab-upload" class="tab-content hidden-section">
+                <h2 class="text-2xl font-bold mb-6">Импорт данных из Excel</h2>
+                <div class="bg-white p-8 rounded-lg shadow text-center">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-10 hover:bg-gray-50 transition cursor-pointer relative">
+                        <input type="file" id="excel-file" accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(this)">
+                        <p class="text-gray-500 text-lg">Перетащите файл сюда или кликните для выбора</p>
+                        <p class="text-gray-400 text-sm mt-2">Формат: .xlsx, .xls</p>
+                    </div>
+                    <div id="upload-status" class="mt-4 text-sm font-medium"></div>
+                </div>
             </div>
+
+        </main>
+    </div>
+
+    <!-- Модальное окно создания кампании -->
+    <div id="campaign-modal" class="hidden-section fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-bold mb-4">Новая кампания</h3>
+            <form id="new-campaign-form" onsubmit="createCampaign(event)" class="space-y-4">
+                <input type="text" id="camp-name" required class="w-full border p-2 rounded" placeholder="Название">
+                <select id="camp-type" class="w-full border p-2 rounded">
+                    <option value="search">Поиск</option>
+                    <option value="catalog">Каталог</option>
+                    <option value="brand">Бренд</option>
+                </select>
+                <select id="camp-status" class="w-full border p-2 rounded">
+                    <option value="active">Активна</option>
+                    <option value="draft">Черновик</option>
+                    <option value="stopped">Остановлена</option>
+                </select>
+                <input type="date" id="camp-start" required class="w-full border p-2 rounded">
+                <input type="number" id="camp-budget" placeholder="Бюджет (₽)" class="w-full border p-2 rounded">
+                
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Отмена</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Создать</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script src="script.js"></script>
 </body>
-</html>

@@ -1,417 +1,370 @@
-// Основное приложение
-const app = {
-    data: {
-        campaigns: [],
-        currentUser: null
-    },
+// Глобальные переменные
+let supabase = null;
+let currentUser = null;
+let userProfile = null;
 
-    // Тестовые пользователи
-    users: [
-        { login: 'admin', password: 'admin123', role: 'admin', name: 'Администратор' },
-        { login: 'analyst', password: 'analyst123', role: 'user', name: 'Аналитик' }
-    ],
+// --- 1. Инициализация и Конфигурация ---
 
-    init() {
-        // Загрузка данных из localStorage
-        const stored = localStorage.getItem('wb_promo_data');
-        if (stored) {
-            this.data.campaigns = JSON.parse(stored);
-        }
+window.addEventListener('DOMContentLoaded', () => {
+    const savedUrl = localStorage.getItem('sb_url');
+    const savedKey = localStorage.getItem('sb_key');
 
-        // Инициализация обработчиков
-        this.setupEventListeners();
-
-        // Показать экран авторизации
-        this.showAuthScreen();
-    },
-
-    showAuthScreen() {
-        // Скрыть все секции
-        document.querySelectorAll('.role-screen, .view-section, .auth-screen').forEach(el => {
-            el.classList.remove('active');
-        });
-        document.getElementById('auth-screen').classList.add('active');
-    },
-
-    authenticate(login, password) {
-        const user = this.users.find(u => u.login === login && u.password === password);
-        if (user) {
-            this.data.currentUser = user;
-            return true;
-        }
-        return false;
-    },
-
-
-    setRole(role) {
-        // Скрыть все секции
-        document.querySelectorAll('.role-screen, .view-section').forEach(el => {
-            el.classList.remove('active');
-        });
-
-        if (role === 'selection') {
-            document.getElementById('role-selection').classList.add('active');
-        } else if (role === 'admin') {
-            document.getElementById('admin-view').classList.add('active');
-            this.renderAdminTable();
-            this.updateCampaignSelect();
-        } else if (role === 'user') {
-            document.getElementById('user-view').classList.add('active');
-            this.renderUserTable();
-            this.calculateSummary();
-        }
-    },
-
-    setupEventListeners() {
-        // Форма добавления кампании
-        document.getElementById('campaign-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addCampaign();
-        });
-
-        // Drag & Drop для файлов
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('excel-input');
-
-        dropZone.addEventListener('click', () => fileInput.click());
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                this.handleFile(files[0]);
-            }
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                this.handleFile(e.target.files[0]);
-            }
-        });
-    },
-
-    addCampaign() {
-        const url = document.getElementById('camp-url').value;
-        const type = document.getElementById('camp-type').value;
-        const period = document.getElementById('camp-period').value;
-        const cost = parseFloat(document.getElementById('camp-cost').value);
-        const impressions = parseInt(document.getElementById('camp-impressions').value);
-        const ctr = parseFloat(document.getElementById('camp-ctr').value);
-        const orders = parseInt(document.getElementById('camp-orders').value);
-        const drr = parseFloat(document.getElementById('camp-drr').value);
-
-        // Извлечение названия из URL (последняя часть после /)
-        let name = 'Кампания';
-        try {
-            const urlObj = new URL(url);
-            const pathParts = urlObj.pathname.split('/').filter(p => p);
-            if (pathParts.length > 0) {
-                name = decodeURIComponent(pathParts[pathParts.length - 1]);
-            }
-        } catch (e) {
-            name = 'Кампания ' + (this.data.campaigns.length + 1);
-        }
-
-        const campaign = {
-            id: Date.now(),
-            name,
-            url,
-            type,
-            period,
-            cost,
-            impressions,
-            ctr,
-            orders,
-            drr,
-            hasDetailData: false,
-            detailData: null
-        };
-
-        this.data.campaigns.push(campaign);
-        this.saveData();
-        
-        // Очистка формы
-        document.getElementById('campaign-form').reset();
-        alert('Кампания успешно добавлена!');
-        
-        this.renderAdminTable();
-        this.updateCampaignSelect();
-    },
-
-    handleFile(file) {
-        const campaignId = document.getElementById('file-campaign-select').value;
-        const statusEl = document.getElementById('upload-status');
-
-        if (!campaignId) {
-            statusEl.textContent = '❌ Сначала выберите кампанию!';
-            statusEl.className = 'status-msg error';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                
-                // Конвертация в JSON с заголовками
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                // Обработка данных
-                const processedData = this.processExcelData(jsonData);
-                
-                // Сохранение в кампанию
-                const campaign = this.data.campaigns.find(c => c.id == campaignId);
-                if (campaign) {
-                    campaign.hasDetailData = true;
-                    campaign.detailData = processedData;
-                    this.saveData();
-                    
-                    statusEl.textContent = `✅ Файл загружен! Обработано строк: ${processedData.length}`;
-                    statusEl.className = 'status-msg success';
-                    
-                    this.renderAdminTable();
-                }
-            } catch (error) {
-                console.error(error);
-                statusEl.textContent = '❌ Ошибка при чтении файла: ' + error.message;
-                statusEl.className = 'status-msg error';
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    },
-
-    processExcelData(rawData) {
-        if (rawData.length < 2) return [];
-
-        // Получаем заголовки (первая строка)
-        const headers = rawData[0].map(h => String(h).trim());
-        
-        // Находим индексы нужных колонок
-        const idx = {
-            type: headers.findIndex(h => h.toLowerCase().includes('тип конверсии')),
-            cost: headers.findIndex(h => h.toLowerCase().includes('затраты'))
-        };
-
-        // Обрабатываем строки данных (пропускаем первую - заголовки, и последнюю - итоги)
-        const processed = [];
-        
-        for (let i = 1; i < rawData.length - 1; i++) {
-            const row = rawData[i];
-            
-            // Пропускаем пустые строки
-            if (!row || row.length === 0) continue;
-
-            // Проверка на "Всего по кампании" в любой ячейке
-            const rowText = row.join(' ').toLowerCase();
-            if (rowText.includes('всего по кампании') || rowText.includes('итого')) {
-                continue;
-            }
-
-            // Фильтр: Тип конверсии != "Мультикарточка"
-            if (idx.type !== -1 && row[idx.type]) {
-                const typeVal = String(row[idx.type]).toLowerCase();
-                if (typeVal.includes('мультикарточка')) {
-                    continue;
-                }
-            }
-
-            // Фильтр: Затраты != 0
-            if (idx.cost !== -1 && row[idx.cost]) {
-                const costVal = parseFloat(row[idx.cost]);
-                if (costVal === 0 || isNaN(costVal)) {
-                    continue;
-                }
-            }
-
-            // Создаем объект строки
-            const rowObj = {};
-            headers.forEach((h, index) => {
-                rowObj[h] = row[index];
-            });
-            
-            processed.push(rowObj);
-        }
-
-        return processed;
-    },
-
-    deleteCampaign(id) {
-        if (confirm('Вы уверены, что хотите удалить эту кампанию?')) {
-            this.data.campaigns = this.data.campaigns.filter(c => c.id !== id);
-            this.saveData();
-            this.renderAdminTable();
-            this.updateCampaignSelect();
-        }
-    },
-
-    updateCampaignSelect() {
-        const select = document.getElementById('file-campaign-select');
-        select.innerHTML = '<option value="">-- Выберите кампанию --</option>';
-        
-        this.data.campaigns.forEach(c => {
-            const option = document.createElement('option');
-            option.value = c.id;
-            option.textContent = `${c.name} (${c.period})`;
-            select.appendChild(option);
-        });
-    },
-
-    renderAdminTable() {
-        const tbody = document.getElementById('admin-campaigns-body');
-        tbody.innerHTML = '';
-
-        if (this.data.campaigns.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Список пуст</td></tr>';
-            return;
-        }
-
-        this.data.campaigns.forEach(c => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><a href="${c.url}" target="_blank" style="color: var(--primary-color);">${c.name}</a></td>
-                <td>${c.type}</td>
-                <td>${c.period}</td>
-                <td>${c.cost.toLocaleString()} ₽</td>
-                <td>${c.hasDetailData ? '✅ Да' : '❌ Нет'}</td>
-                <td>
-                    <button class="btn-danger" onclick="app.deleteCampaign(${c.id})">Удалить</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    },
-
-    renderUserTable() {
-        const tbody = document.getElementById('user-campaigns-body');
-        tbody.innerHTML = '';
-
-        if (this.data.campaigns.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Нет данных</td></tr>';
-            return;
-        }
-
-        this.data.campaigns.forEach(c => {
-            // Основная строка
-            const mainRow = document.createElement('tr');
-            mainRow.innerHTML = `
-                <td>
-                    <button class="expand-btn" onclick="app.toggleDetail(${c.id})">▶</button>
-                </td>
-                <td><a href="${c.url}" target="_blank" style="color: var(--primary-color); text-decoration: none;">${c.name}</a></td>
-                <td>${c.type}</td>
-                <td>${c.period}</td>
-                <td>${c.cost.toLocaleString()}</td>
-                <td>${c.impressions.toLocaleString()}</td>
-                <td>${c.ctr}%</td>
-                <td>${c.orders}</td>
-                <td>${c.drr}%</td>
-            `;
-            tbody.appendChild(mainRow);
-
-            // Строка с деталями
-            const detailRow = document.createElement('tr');
-            detailRow.className = 'detail-row';
-            detailRow.id = `detail-${c.id}`;
-            
-            let detailContent = '<td colspan="9"><div class="detail-content">';
-            
-            if (c.hasDetailData && c.detailData && c.detailData.length > 0) {
-                const headers = Object.keys(c.detailData[0]);
-                
-                detailContent += '<h4 style="margin-bottom: 10px;">📊 Детальная статистика</h4>';
-                detailContent += '<table class="detail-table"><thead><tr>';
-                headers.forEach(h => {
-                    detailContent += `<th>${h}</th>`;
-                });
-                detailContent += '</tr></thead><tbody>';
-                
-                c.detailData.forEach(row => {
-                    detailContent += '<tr>';
-                    headers.forEach(h => {
-                        let val = row[h];
-                        if (typeof val === 'number') {
-                            val = val.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
-                        }
-                        detailContent += `<td>${val || '-'}</td>`;
-                    });
-                    detailContent += '</tr>';
-                });
-                
-                detailContent += '</tbody></table>';
-            } else {
-                detailContent += '<p style="color: var(--text-muted);">Детальные данные не загружены</p>';
-            }
-            
-            detailContent += '</div></td>';
-            detailRow.innerHTML = detailContent;
-            tbody.appendChild(detailRow);
-        });
-    },
-
-    toggleDetail(id) {
-        const detailRow = document.getElementById(`detail-${id}`);
-        const btn = detailRow.previousElementSibling.querySelector('.expand-btn');
-        
-        if (detailRow.classList.contains('active')) {
-            detailRow.classList.remove('active');
-            btn.classList.remove('rotated');
-            btn.textContent = '▶';
-        } else {
-            detailRow.classList.add('active');
-            btn.classList.add('rotated');
-            btn.textContent = '▼';
-        }
-    },
-
-    calculateSummary() {
-        const totalCost = this.data.campaigns.reduce((sum, c) => sum + c.cost, 0);
-        const totalImpressions = this.data.campaigns.reduce((sum, c) => sum + c.impressions, 0);
-        const totalOrders = this.data.campaigns.reduce((sum, c) => sum + c.orders, 0);
-        
-        const avgCtr = this.data.campaigns.length > 0 
-            ? (this.data.campaigns.reduce((sum, c) => sum + c.ctr, 0) / this.data.campaigns.length).toFixed(2)
-            : 0;
-
-        const container = document.getElementById('summary-stats');
-        container.innerHTML = `
-            <div class="stat-card">
-                <h3>Общие затраты</h3>
-                <div class="value">${totalCost.toLocaleString('ru-RU')} ₽</div>
-            </div>
-            <div class="stat-card">
-                <h3>Показы</h3>
-                <div class="value">${totalImpressions.toLocaleString('ru-RU')}</div>
-            </div>
-            <div class="stat-card">
-                <h3>Заказы</h3>
-                <div class="value">${totalOrders.toLocaleString('ru-RU')}</div>
-            </div>
-            <div class="stat-card">
-                <h3>Средний CTR</h3>
-                <div class="value">${avgCtr}%</div>
-            </div>
-        `;
-    },
-
-    saveData() {
-        localStorage.setItem('wb_promo_data', JSON.stringify(this.data.campaigns));
+    if (savedUrl && savedKey) {
+        initSupabase(savedUrl, savedKey);
+        checkSession();
+    } else {
+        showSetupScreen();
     }
-};
-
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    app.init();
 });
+
+function initSupabase(url, key) {
+    // Проверка наличия библиотеки (если подключена через CDN)
+    if (typeof supabase !== 'undefined') {
+        supabase = supabase.createClient(url, key);
+    } else {
+        // Fallback если скрипт не загрузился (редкий случай)
+        console.error("Supabase JS library not loaded");
+        alert("Ошибка загрузки библиотеки. Проверьте интернет.");
+    }
+}
+
+function saveSupabaseConfig() {
+    const url = document.getElementById('sb-url').value.trim();
+    const key = document.getElementById('sb-key').value.trim();
+
+    if (!url || !key) {
+        alert("Заполните оба поля!");
+        return;
+    }
+
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb-key', key);
+    
+    initSupabase(url, key);
+    document.getElementById('setup-screen').classList.add('hidden-section');
+    checkSession();
+}
+
+function showSetupScreen() {
+    document.getElementById('setup-screen').classList.remove('hidden-section');
+    document.getElementById('auth-screen').classList.add('hidden-section');
+    document.getElementById('app-screen').classList.add('hidden-section');
+}
+
+function toggleSetupScreen() {
+    const screen = document.getElementById('setup-screen');
+    if (screen.classList.contains('hidden-section')) {
+        screen.classList.remove('hidden-section');
+        // Заполняем текущими значениями
+        document.getElementById('sb-url').value = localStorage.getItem('sb_url');
+        document.getElementById('sb-key').value = localStorage.getItem('sb-key');
+    } else {
+        screen.classList.add('hidden-section');
+    }
+}
+
+// --- 2. Аутентификация ---
+
+async function checkSession() {
+    if (!supabase) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        await fetchUserProfile();
+    } else {
+        showAuthScreen();
+    }
+}
+
+function showAuthScreen() {
+    document.getElementById('setup-screen').classList.add('hidden-section');
+    document.getElementById('auth-screen').classList.remove('hidden-section');
+    document.getElementById('app-screen').classList.add('hidden-section');
+}
+
+async function handleLogin() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('auth-error');
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } else {
+        currentUser = data.user;
+        errorEl.classList.add('hidden');
+        await fetchUserProfile();
+    }
+}
+
+async function handleSignup() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('auth-error');
+
+    const { error } = await supabase.auth.signUp({ email, password });
+
+    if (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+    } else {
+        alert("Регистрация успешна! Проверьте почту для подтверждения входа.\nПо умолчанию вам присвоена роль 'observer'.");
+        errorEl.classList.add('hidden');
+    }
+}
+
+async function handleLogout() {
+    await supabase.auth.signOut();
+    currentUser = null;
+    userProfile = null;
+    showAuthScreen();
+}
+
+async function fetchUserProfile() {
+    if (!currentUser) return;
+
+    // Пытаемся получить профиль
+    let { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (error || !profile) {
+        // Если профиля нет, создаем его с ролью observer
+        const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert([{ id: currentUser.id, email: currentUser.email, role: 'observer' }])
+            .select()
+            .single();
+        
+        if (insertError) {
+            console.error("Ошибка создания профиля:", insertError);
+            alert("Ошибка доступа к профилю.");
+            handleLogout();
+            return;
+        }
+        profile = newProfile;
+    }
+
+    userProfile = profile;
+    setupInterfaceByRole();
+}
+
+// --- 3. Управление интерфейсом по ролям ---
+
+function setupInterfaceByRole() {
+    document.getElementById('auth-screen').classList.add('hidden-section');
+    document.getElementById('app-screen').classList.remove('hidden-section');
+    
+    const role = userProfile.role;
+    const badge = document.getElementById('user-role-badge');
+    const navCampaigns = document.getElementById('nav-campaigns');
+    const navUpload = document.getElementById('nav-upload');
+    const adminBtn = document.getElementById('admin-settings-btn');
+
+    // Отображение роли
+    const roleNames = { 'admin': 'Администратор', 'marketer': 'Маркетолог', 'observer': 'Наблюдатель' };
+    badge.textContent = roleNames[role] || role;
+    
+    // Стили бейджа
+    badge.className = `ml-3 px-2 py-1 text-xs font-semibold rounded ${
+        role === 'admin' ? 'bg-red-100 text-red-800' : 
+        role === 'marketer' ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-700'
+    }`;
+
+    // Логика видимости меню
+    if (role === 'admin' || role === 'marketer') {
+        navCampaigns.classList.remove('hidden');
+        navUpload.classList.remove('hidden');
+        switchTab('campaigns'); // По умолчанию переходим к работе
+    } else {
+        navCampaigns.classList.add('hidden');
+        navUpload.classList.add('hidden');
+        switchTab('dashboard'); // Только дашборд
+    }
+
+    // Кнопка настроек только для админа
+    if (role === 'admin') {
+        adminBtn.classList.remove('hidden');
+    } else {
+        adminBtn.classList.add('hidden');
+    }
+
+    loadData();
+}
+
+function switchTab(tabName) {
+    // Скрыть все табы
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden-section'));
+    document.querySelectorAll('.nav-link').forEach(el => {
+        el.classList.remove('border-blue-500', 'text-blue-600');
+        el.classList.add('border-transparent', 'text-gray-500');
+    });
+
+    // Показать нужный
+    document.getElementById(`tab-${tabName}`).classList.remove('hidden-section');
+    
+    // Подсветка кнопки (упрощенно)
+    const btn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+    if(btn) {
+        btn.classList.remove('border-transparent', 'text-gray-500');
+        btn.classList.add('border-blue-500', 'text-blue-600');
+    }
+}
+
+// --- 4. Работа с данными (Кампании) ---
+
+async function loadData() {
+    if (!supabase) return;
+    
+    // Загрузка кампаний
+    const { data: campaigns, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Ошибка загрузки:", error);
+        return;
+    }
+
+    renderDashboard(campaigns);
+    renderCampaignsTable(campaigns);
+}
+
+function renderDashboard(campaigns) {
+    const total = campaigns.length;
+    const active = campaigns.filter(c => c.status === 'active').length;
+    const budget = campaigns.reduce((sum, c) => sum + (parseFloat(c.budget) || 0), 0);
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-active').textContent = active;
+    document.getElementById('stat-budget').textContent = budget.toLocaleString('ru-RU') + ' ₽';
+
+    const tbody = document.getElementById('dashboard-table-body');
+    tbody.innerHTML = campaigns.slice(0, 5).map(c => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${c.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.type}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(c.status)}">
+                    ${c.status}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.start_date || '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function renderCampaignsTable(campaigns) {
+    const tbody = document.getElementById('campaigns-table-body');
+    if (!campaigns || campaigns.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Нет данных</td></tr>';
+        return;
+    }
+    tbody.innerHTML = campaigns.map(c => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${c.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.type}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(c.status)}">
+                    ${c.status}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.start_date || '-'} ${c.end_date ? '— ' + c.end_date : ''}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button onclick="deleteCampaign('${c.id}')" class="text-red-600 hover:text-red-900">Удалить</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getStatusColor(status) {
+    if (status === 'active') return 'bg-green-100 text-green-800';
+    if (status === 'draft') return 'bg-gray-100 text-gray-800';
+    if (status === 'stopped') return 'bg-red-100 text-red-800';
+    return 'bg-blue-100 text-blue-800';
+}
+
+// Создание кампании
+async function createCampaign(e) {
+    e.preventDefault();
+    const name = document.getElementById('camp-name').value;
+    const type = document.getElementById('camp-type').value;
+    const status = document.getElementById('camp-status').value;
+    const start = document.getElementById('camp-start').value;
+    const budget = document.getElementById('camp-budget').value;
+
+    const { error } = await supabase.from('campaigns').insert([{
+        name, type, status, start_date: start, budget: budget || 0,
+        created_by: currentUser.id
+    }]);
+
+    if (error) {
+        alert("Ошибка: " + error.message);
+    } else {
+        closeModal();
+        document.getElementById('new-campaign-form').reset();
+        loadData();
+    }
+}
+
+async function deleteCampaign(id) {
+    if(!confirm("Удалить эту кампанию?")) return;
+    const { error } = await supabase.from('campaigns').delete().eq('id', id);
+    if (error) alert("Ошибка удаления");
+    else loadData();
+}
+
+// Модалка
+function openModal() { document.getElementById('campaign-modal').classList.remove('hidden-section'); }
+function closeModal() { document.getElementById('campaign-modal').classList.add('hidden-section'); }
+
+// --- 5. Загрузка Excel ---
+
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+        await uploadExcelData(jsonData);
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function uploadExcelData(rows) {
+    const statusDiv = document.getElementById('upload-status');
+    statusDiv.textContent = `Обработано строк: ${rows.length}. Загрузка...`;
+    statusDiv.className = "mt-4 text-sm font-medium text-blue-600";
+
+    // Предполагаем, что в Excel колонки называются: Name, Type, Status, StartDate, Budget
+    // Маппинг полей может потребовать адаптации под ваш реальный файл
+    const formattedData = rows.map(row => ({
+        name: row.Name || row.name || "Без названия",
+        type: row.Type || row.type || "search",
+        status: row.Status || row.status || "draft",
+        start_date: row.StartDate || row.start_date || new Date().toISOString().split('T')[0],
+        budget: row.Budget || row.budget || 0,
+        created_by: currentUser.id
+    }));
+
+    const { error } = await supabase.from('campaigns').insert(formattedData);
+
+    if (error) {
+        statusDiv.textContent = `Ошибка: ${error.message}`;
+        statusDiv.className = "mt-4 text-sm font-medium text-red-600";
+    } else {
+        statusDiv.textContent = `Успешно загружено ${formattedData.length} записей!`;
+        statusDiv.className = "mt-4 text-sm font-medium text-green-600";
+        loadData();
+    }
+}
