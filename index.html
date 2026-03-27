@@ -9,8 +9,32 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Экран выбора роли -->
-        <div id="role-selection" class="role-screen active">
+        <!-- Экран авторизации -->
+        <div id="auth-screen" class="auth-screen active">
+            <div class="auth-card">
+                <h2>🔐 Авторизация</h2>
+                <form id="auth-form">
+                    <div class="form-group">
+                        <label>Логин</label>
+                        <input type="text" id="auth-login" placeholder="Введите логин" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Пароль</label>
+                        <input type="password" id="auth-password" placeholder="Введите пароль" required>
+                    </div>
+                    <button type="submit" class="btn-primary full-width">Войти</button>
+                    <p class="hint" style="margin-top: 15px; font-size: 12px;">
+                        <strong>Тестовые учетки:</strong><br>
+                        Админ: admin / admin123<br>
+                        Аналитик: analyst / analyst123
+                    </p>
+                    <div id="auth-error" class="status-msg error" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Экран выбора роли (теперь скрыт по умолчанию) -->
+        <div id="role-selection" class="role-screen">
             <div class="role-card" onclick="app.setRole('admin')">
                 <h2>👤 Администратор</h2>
                 <p>Добавление кампаний и загрузка данных</p>
