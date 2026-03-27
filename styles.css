@@ -46,6 +46,39 @@ body {
     display: flex;
 }
 
+/* Экран авторизации */
+.auth-screen {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.auth-screen.active {
+    display: flex;
+}
+
+.auth-card {
+    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.auth-card h2 {
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    border: none;
+}
+
+.auth-card .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
 .role-card {
     background: var(--card-bg);
     padding: 40px;

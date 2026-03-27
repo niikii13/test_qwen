@@ -1,8 +1,15 @@
 // Основное приложение
 const app = {
     data: {
-        campaigns: []
+        campaigns: [],
+        currentUser: null
     },
+
+    // Тестовые пользователи
+    users: [
+        { login: 'admin', password: 'admin123', role: 'admin', name: 'Администратор' },
+        { login: 'analyst', password: 'analyst123', role: 'user', name: 'Аналитик' }
+    ],
 
     init() {
         // Загрузка данных из localStorage
@@ -13,10 +20,28 @@ const app = {
 
         // Инициализация обработчиков
         this.setupEventListeners();
-        
-        // Показать экран выбора роли
-        this.setRole('selection');
+
+        // Показать экран авторизации
+        this.showAuthScreen();
     },
+
+    showAuthScreen() {
+        // Скрыть все секции
+        document.querySelectorAll('.role-screen, .view-section, .auth-screen').forEach(el => {
+            el.classList.remove('active');
+        });
+        document.getElementById('auth-screen').classList.add('active');
+    },
+
+    authenticate(login, password) {
+        const user = this.users.find(u => u.login === login && u.password === password);
+        if (user) {
+            this.data.currentUser = user;
+            return true;
+        }
+        return false;
+    },
+
 
     setRole(role) {
         // Скрыть все секции
